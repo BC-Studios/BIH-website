@@ -121,6 +121,33 @@ function Nav() {
           State Design
         </a>
         <a
+          href="/research/"
+          className="text-xs tracking-widest uppercase transition-colors"
+          style={{ color: "#8a8fa8", fontFamily: "'DM Sans', sans-serif" }}
+          onMouseEnter={(e) => (e.currentTarget.style.color = "#e8e9f0")}
+          onMouseLeave={(e) => (e.currentTarget.style.color = "#8a8fa8")}
+        >
+          Research
+        </a>
+        <a
+          href="/training/"
+          className="text-xs tracking-widest uppercase transition-colors"
+          style={{ color: "#8a8fa8", fontFamily: "'DM Sans', sans-serif" }}
+          onMouseEnter={(e) => (e.currentTarget.style.color = "#e8e9f0")}
+          onMouseLeave={(e) => (e.currentTarget.style.color = "#8a8fa8")}
+        >
+          Training
+        </a>
+        <a
+          href="/interactive-flow/"
+          className="text-xs tracking-widest uppercase transition-colors"
+          style={{ color: "#8a8fa8", fontFamily: "'DM Sans', sans-serif" }}
+          onMouseEnter={(e) => (e.currentTarget.style.color = "#e8e9f0")}
+          onMouseLeave={(e) => (e.currentTarget.style.color = "#8a8fa8")}
+        >
+          Flow Builder
+        </a>
+        <a
           href="#contact"
           className="px-4 py-2 text-xs tracking-widest uppercase transition-all"
           style={{
