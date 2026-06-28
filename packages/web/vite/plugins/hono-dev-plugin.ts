@@ -1,9 +1,60 @@
 import type { Plugin, ViteDevServer } from "vite";
+import fs from "node:fs";
+import path from "node:path";
+
+// Static section folders that live in public/ and must be served as raw HTML
+// instead of being intercepted by Vite's SPA index.html fallback.
+const STATIC_SECTIONS = [
+  "research",
+  "training",
+  "interactive-flow",
+  "instruction-manual",
+  "journal",
+];
 
 export default function honoDevPlugin(): Plugin {
   return {
     name: "hono-dev-server",
     configureServer(server) {
+      const publicDir = server.config.publicDir;
+
+      // Serve static section HTML files before Vite's SPA fallback.
+      server.middlewares.use((req, res, next) => {
+        if (!req.url) return next();
+        const urlPath = req.url.split("?")[0];
+        const firstSeg = urlPath.split("/").filter(Boolean)[0];
+        if (!firstSeg || !STATIC_SECTIONS.includes(firstSeg)) return next();
+
+        // Resolve to a file inside public/
+        let rel = decodeURIComponent(urlPath);
+        if (rel.endsWith("/")) rel += "index.html";
+        let filePath = path.join(publicDir, rel);
+
+        // If path has no extension and isn't a file, try /index.html
+        if (!path.extname(filePath)) {
+          const asDir = path.join(filePath, "index.html");
+          if (fs.existsSync(asDir)) filePath = asDir;
+        }
+
+        if (fs.existsSync(filePath) && fs.statSync(filePath).isFile()) {
+          const ext = path.extname(filePath);
+          const type =
+            ext === ".html"
+              ? "text/html"
+              : ext === ".css"
+                ? "text/css"
+                : ext === ".js"
+                  ? "text/javascript"
+                  : ext === ".png"
+                    ? "image/png"
+                    : "application/octet-stream";
+          res.setHeader("Content-Type", type);
+          res.end(fs.readFileSync(filePath));
+          return;
+        }
+        return next();
+      });
+
       server.middlewares.use(async (req, res, next) => {
         if (!req.url?.startsWith("/api")) return next();
 
