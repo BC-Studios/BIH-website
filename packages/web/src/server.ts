@@ -1,11 +1,13 @@
 import app from "./api";
 
 const port = Number(process.env.PORT ?? 3000);
+const hostname = process.env.HOST ?? "127.0.0.1";
 const distDir = `${import.meta.dir}/../dist`;
 const indexPath = `${distDir}/index.html`;
 
 const server = Bun.serve({
   port,
+  hostname,
   async fetch(request) {
     const url = new URL(request.url);
 
@@ -13,10 +15,9 @@ const server = Bun.serve({
       return app.fetch(request);
     }
 
-    const filePath = getStaticFilePath(url.pathname);
-    const file = Bun.file(filePath);
+    const file = await getStaticFile(url.pathname);
 
-    if (await file.exists()) {
+    if (file) {
       return new Response(file);
     }
 
@@ -34,12 +35,26 @@ const server = Bun.serve({
   },
 });
 
-console.log(`Web server listening on http://localhost:${server.port}`);
+console.log(`Web server listening on http://${server.hostname}:${server.port}`);
 
-function getStaticFilePath(pathname: string) {
+async function getStaticFile(pathname: string) {
   const cleanPath = decodeURIComponent(pathname)
     .replace(/^\/+/, "")
     .replaceAll("..", "");
 
-  return cleanPath ? `${distDir}/${cleanPath}` : indexPath;
+  if (!cleanPath) {
+    return Bun.file(indexPath);
+  }
+
+  const exactFile = Bun.file(`${distDir}/${cleanPath}`);
+  if (await exactFile.exists()) {
+    return exactFile;
+  }
+
+  const directoryIndex = Bun.file(`${distDir}/${cleanPath.replace(/\/$/, "")}/index.html`);
+  if (await directoryIndex.exists()) {
+    return directoryIndex;
+  }
+
+  return null;
 }

@@ -2,6 +2,16 @@ import { useState } from "react";
 
 const LINKEDIN = "https://uk.linkedin.com/company/brain-innovation-house";
 
+const PRIMARY_NAV = [
+  { label: "Research", href: "/research/" },
+  { label: "Training", href: "/training/" },
+  { label: "Interactive Flow", href: "/interactive-flow/" },
+  { label: "Manual", href: "/instruction-manual/" },
+];
+
+const researchFilterHref = (filter: string) =>
+  `/research/?filter=${encodeURIComponent(filter)}#research-tools`;
+
 function NeuralBackground() {
   return (
     <div className="fixed inset-0 pointer-events-none overflow-hidden z-0">
@@ -87,7 +97,7 @@ function NeuralBackground() {
 function Nav() {
   return (
     <nav
-      className="fixed top-0 left-0 right-0 z-50 flex items-center justify-between px-8 py-5"
+      className="fixed top-0 left-0 right-0 z-50 flex flex-wrap items-center justify-between gap-4 px-8 py-5"
       style={{
         background: "rgba(5,6,15,0.75)",
         backdropFilter: "blur(18px)",
@@ -97,31 +107,25 @@ function Nav() {
       <div className="flex items-center gap-4">
         <img src="/sansara-icon.png" alt="Sansara" style={{ height: "32px", width: "32px", borderRadius: "8px", objectFit: "cover" }} />
         <span style={{ color: "rgba(255,255,255,0.15)", fontSize: "1rem" }}>×</span>
-        <img src="/bih-logo-transparent.png" alt="Brain Innovation House" style={{ height: "40px", objectFit: "contain", opacity: 0.9 }} />
+        <img src="/assets/brain-innovation-house-logo-white.png" alt="Brain Innovation House" style={{ height: "48px", objectFit: "contain", opacity: 0.95 }} />
         <span style={{ color: "rgba(255,255,255,0.15)", fontSize: "1rem" }}>×</span>
         <img src="/bc-studios-logo.png" alt="BC Studios" style={{ height: "44px", objectFit: "contain", opacity: 0.9 }} />
       </div>
-      <div className="flex items-center gap-6">
+      <div className="flex flex-wrap items-center justify-end gap-4">
+        {PRIMARY_NAV.map((item) => (
+          <a
+            key={item.href}
+            href={item.href}
+            className="text-xs tracking-widest uppercase transition-colors"
+            style={{ color: "#8a8fa8", fontFamily: "'DM Sans', sans-serif" }}
+            onMouseEnter={(e) => (e.currentTarget.style.color = "#e8e9f0")}
+            onMouseLeave={(e) => (e.currentTarget.style.color = "#8a8fa8")}
+          >
+            {item.label}
+          </a>
+        ))}
         <a
-          href="#what-we-do"
-          className="text-xs tracking-widest uppercase transition-colors"
-          style={{ color: "#8a8fa8", fontFamily: "'DM Sans', sans-serif" }}
-          onMouseEnter={(e) => (e.currentTarget.style.color = "#e8e9f0")}
-          onMouseLeave={(e) => (e.currentTarget.style.color = "#8a8fa8")}
-        >
-          What We Do
-        </a>
-        <a
-          href="#state-design"
-          className="text-xs tracking-widest uppercase transition-colors"
-          style={{ color: "#8a8fa8", fontFamily: "'DM Sans', sans-serif" }}
-          onMouseEnter={(e) => (e.currentTarget.style.color = "#e8e9f0")}
-          onMouseLeave={(e) => (e.currentTarget.style.color = "#8a8fa8")}
-        >
-          State Design
-        </a>
-        <a
-          href="#contact"
+          href="/#contact"
           className="px-4 py-2 text-xs tracking-widest uppercase transition-all"
           style={{
             color: "#080a12",
@@ -170,7 +174,7 @@ function Hero() {
       </div>
       {/* Logo row */}
       <div className="mb-8 flex items-center gap-4 justify-center">
-        <img src="/bih-logo-transparent.png" alt="Brain Innovation House" style={{ height: "36px", objectFit: "contain", opacity: 0.85 }} />
+        <img src="/assets/brain-innovation-house-logo-white.png" alt="Brain Innovation House" style={{ height: "44px", objectFit: "contain", opacity: 0.9 }} />
         <span style={{ color: "rgba(255,255,255,0.2)", fontSize: "1rem" }}>×</span>
         <img src="/bc-studios-logo.png" alt="BC Studios" style={{ height: "40px", objectFit: "contain", opacity: 0.7 }} />
       </div>
@@ -233,7 +237,7 @@ function Hero() {
           Contact Us
         </a>
         <a
-          href="#what-this-is"
+          href="#founders"
           className="px-7 py-3.5 text-sm font-medium tracking-wide transition-all"
           style={{
             color: "#e8e9f0",
@@ -251,7 +255,28 @@ function Hero() {
             e.currentTarget.style.background = "rgba(255,255,255,0.03)";
           }}
         >
-          Explore Collaboration
+          Meet the Founders
+        </a>
+        <a
+          href="/research/"
+          className="px-7 py-3.5 text-sm font-medium tracking-wide transition-all"
+          style={{
+            color: "#e8e9f0",
+            border: "1px solid rgba(107,142,245,0.22)",
+            fontFamily: "'DM Sans', sans-serif",
+            borderRadius: "2px",
+            background: "rgba(107,142,245,0.06)",
+          }}
+          onMouseEnter={(e) => {
+            e.currentTarget.style.borderColor = "rgba(107,142,245,0.45)";
+            e.currentTarget.style.background = "rgba(107,142,245,0.1)";
+          }}
+          onMouseLeave={(e) => {
+            e.currentTarget.style.borderColor = "rgba(107,142,245,0.22)";
+            e.currentTarget.style.background = "rgba(107,142,245,0.06)";
+          }}
+        >
+          Open Research
         </a>
       </div>
       {/* Scroll indicator */}
@@ -274,18 +299,19 @@ function Hero() {
 
 function WhatThisIs() {
   return (
-    <section id="what-this-is" className="relative py-32 px-6">
+    <section id="founders" className="relative py-32 px-6">
+      <div id="what-this-is" className="absolute -top-24" aria-hidden="true" />
       <div className="max-w-6xl mx-auto">
         <div
           className="text-xs tracking-widest uppercase mb-8"
           style={{ color: "#3cb4c8", fontFamily: "'DM Mono', monospace" }}
         >
-          The Collaboration
+          Founder Collaboration
         </div>
 
         {/* Intro statement */}
         <h2
-          className="mb-20 leading-tight max-w-3xl"
+          className="mb-6 leading-tight max-w-3xl"
           style={{
             fontFamily: "'Cormorant Garamond', serif",
             fontSize: "clamp(2rem, 4vw, 3.2rem)",
@@ -293,8 +319,18 @@ function WhatThisIs() {
             fontWeight: 500,
           }}
         >
-          Two founders. Two cities. One platform designed to change how people experience wellness.
+          Sansara is founder-led: neuroscience and practice from London, immersive media technology from Beirut.
         </h2>
+        <p
+          className="mb-14 max-w-3xl leading-relaxed"
+          style={{
+            fontFamily: "'DM Sans', sans-serif",
+            fontSize: "1rem",
+            color: "#8a8fa8",
+          }}
+        >
+          Anastasia and Alexandre are building the bridge between research, yoga teaching, software, music, light, and AI media. The collaboration is not a logo partnership; it is the operating team behind the method.
+        </p>
 
         {/* Two founder cards */}
         <div className="grid md:grid-cols-2 gap-6 mb-6">
@@ -308,8 +344,18 @@ function WhatThisIs() {
               borderRadius: "4px",
             }}
           >
-            <div className="flex items-start justify-between mb-5">
-              <div>
+            <div className="flex flex-col sm:flex-row sm:items-start gap-6 mb-5">
+              <div
+                className="flex h-28 w-28 shrink-0 items-center justify-center overflow-hidden"
+                style={{
+                  background: "linear-gradient(135deg, rgba(139,60,225,0.18), rgba(60,180,200,0.08))",
+                  border: "1px solid rgba(139,60,225,0.28)",
+                  borderRadius: "4px",
+                }}
+              >
+                <img src="/assets/brain-innovation-house-logo-white.png" alt="Brain Innovation House" style={{ width: "82%", height: "82%", objectFit: "contain", opacity: 0.95 }} />
+              </div>
+              <div className="flex-1">
                 <div
                   className="text-base font-medium mb-1"
                   style={{ fontFamily: "'DM Sans', sans-serif", color: "#e8e9f0" }}
@@ -323,7 +369,6 @@ function WhatThisIs() {
                   Brain Innovation House · London
                 </div>
               </div>
-              <img src="/bih-logo-transparent.png" alt="Brain Innovation House" style={{ height: "52px", objectFit: "contain", opacity: 0.85, flexShrink: 0 }} />
             </div>
             <p
               className="mb-5 leading-relaxed"
@@ -360,8 +405,18 @@ function WhatThisIs() {
               borderRadius: "4px",
             }}
           >
-            <div className="flex items-start justify-between mb-5">
-              <div>
+            <div className="flex flex-col sm:flex-row sm:items-start gap-6 mb-5">
+              <div
+                className="flex h-28 w-28 shrink-0 items-center justify-center overflow-hidden"
+                style={{
+                  background: "linear-gradient(135deg, rgba(60,180,200,0.16), rgba(107,142,245,0.08))",
+                  border: "1px solid rgba(60,180,200,0.28)",
+                  borderRadius: "4px",
+                }}
+              >
+                <img src="/bc-studios-logo.png" alt="BC Studios" style={{ width: "84%", height: "84%", objectFit: "contain", opacity: 0.64 }} />
+              </div>
+              <div className="flex-1">
                 <div
                   className="text-base font-medium mb-1"
                   style={{ fontFamily: "'DM Sans', sans-serif", color: "#e8e9f0" }}
@@ -375,7 +430,6 @@ function WhatThisIs() {
                   BC Studios · Beirut
                 </div>
               </div>
-              <img src="/bc-studios-logo.png" alt="BC Studios" style={{ height: "52px", objectFit: "contain", opacity: 0.55, flexShrink: 0 }} />
             </div>
             <p
               className="mb-5 leading-relaxed"
@@ -436,6 +490,33 @@ function WhatThisIs() {
               >
                 An immersive wellness platform for yoga, movement, breath, music, and light — built on the combined expertise of neuroscience, software engineering, and media technology. Designed to give teachers better tools and students deeper experiences.
               </p>
+              <div className="mt-6 flex flex-wrap gap-3">
+                <a
+                  href="#contact"
+                  className="px-5 py-3 text-sm font-medium tracking-wide transition-all"
+                  style={{
+                    background: "#3cb4c8",
+                    color: "#080a12",
+                    fontFamily: "'DM Sans', sans-serif",
+                    borderRadius: "3px",
+                  }}
+                >
+                  Start a Collaboration
+                </a>
+                <a
+                  href="/research/"
+                  className="px-5 py-3 text-sm font-medium tracking-wide transition-all"
+                  style={{
+                    color: "#e8e9f0",
+                    border: "1px solid rgba(255,255,255,0.14)",
+                    fontFamily: "'DM Sans', sans-serif",
+                    borderRadius: "3px",
+                    background: "rgba(255,255,255,0.03)",
+                  }}
+                >
+                  Read the Research
+                </a>
+              </div>
             </div>
             <div
               className="flex-shrink-0 text-center px-8 py-6"
@@ -459,6 +540,189 @@ function WhatThisIs() {
           </div>
         </div>
 
+      </div>
+    </section>
+  );
+}
+
+const SITE_SECTIONS = [
+  {
+    eyebrow: "Think",
+    title: "Research Journal",
+    desc: "Issue 1, themes, sensory maps, researcher pages, notes, and essays behind the Sansara method.",
+    href: "/research/",
+  },
+  {
+    eyebrow: "Train",
+    title: "Training Program",
+    desc: "A teacher-facing workshop structure for composing class arcs through breath, rhythm, movement, attention, and space.",
+    href: "/training/",
+  },
+  {
+    eyebrow: "Build",
+    title: "Interactive Flow",
+    desc: "A future class-design surface for composing movement, energy, rhythm, and atmosphere.",
+    href: "/interactive-flow/",
+  },
+  {
+    eyebrow: "Learn",
+    title: "Instruction Manual",
+    desc: "The operating language for teachers, studios, and collaborators working with the Sansara system.",
+    href: "/instruction-manual/",
+  },
+];
+
+const SANSARA_PILLARS = [
+  {
+    title: "A method",
+    desc: "A practical way to compose breath, movement, rhythm, attention, light, and space around a desired state.",
+  },
+  {
+    title: "A platform",
+    desc: "Tools for teachers and studios to plan immersive class arcs, document what works, and make the room easier to conduct.",
+  },
+  {
+    title: "A research system",
+    desc: "A living library that translates neuroscience, performance science, and environmental design into usable principles.",
+  },
+];
+
+function SansaraSite() {
+  return (
+    <section className="relative py-32 px-6">
+      <div className="max-w-6xl mx-auto">
+        <div className="grid lg:grid-cols-[0.9fr_1.1fr] gap-10 mb-16 items-start">
+          <div className="max-w-3xl">
+            <div
+              className="text-xs tracking-widest uppercase mb-4"
+              style={{ color: "#3cb4c8", fontFamily: "'DM Mono', monospace" }}
+            >
+              What Sansara Is
+            </div>
+            <h2
+              className="mb-5 leading-tight"
+              style={{
+                fontFamily: "'Cormorant Garamond', serif",
+                fontSize: "clamp(2rem, 4vw, 3rem)",
+                color: "#e8e9f0",
+                fontWeight: 500,
+              }}
+            >
+              A state-design system for immersive yoga, built from practice, science, and sensory technology.
+            </h2>
+            <p
+              style={{
+                fontFamily: "'DM Sans', sans-serif",
+                fontSize: "0.95rem",
+                color: "#8a8fa8",
+                lineHeight: "1.8",
+              }}
+            >
+              Sansara is not only a class format and not only a research journal. It is a way to design the whole experience around attention, regulation, synchrony, recovery, and flow.
+            </p>
+          </div>
+          <div className="grid gap-3">
+            {SANSARA_PILLARS.map((pillar, index) => (
+              <div
+                key={pillar.title}
+                className="p-5"
+                style={{
+                  background: "#0c0e1a",
+                  border: "1px solid rgba(255,255,255,0.07)",
+                  borderLeft: `3px solid ${index === 0 ? "#3cb4c8" : index === 1 ? "#8b3ce1" : "#6b8ef5"}`,
+                  borderRadius: "4px",
+                }}
+              >
+                <h3
+                  className="mb-2 text-base font-medium"
+                  style={{ fontFamily: "'DM Sans', sans-serif", color: "#e8e9f0" }}
+                >
+                  {pillar.title}
+                </h3>
+                <p
+                  className="text-sm leading-relaxed"
+                  style={{ fontFamily: "'DM Sans', sans-serif", color: "#8a8fa8" }}
+                >
+                  {pillar.desc}
+                </p>
+              </div>
+            ))}
+          </div>
+        </div>
+        <div
+          className="mb-10 p-6"
+          style={{
+            background: "rgba(16,19,32,0.72)",
+            border: "1px solid rgba(60,180,200,0.16)",
+            borderRadius: "4px",
+          }}
+        >
+          <div
+            className="text-xs tracking-widest uppercase mb-4"
+            style={{ fontFamily: "'DM Mono', monospace", color: "#3cb4c8" }}
+          >
+            Operating Loop
+          </div>
+          <div className="grid sm:grid-cols-5 gap-3">
+            {["Research", "Translate", "Train", "Prototype", "Measure"].map((step) => (
+              <div
+                key={step}
+                className="px-4 py-3 text-center text-xs tracking-widest uppercase"
+                style={{
+                  fontFamily: "'DM Mono', monospace",
+                  color: "#c8cce0",
+                  border: "1px solid rgba(255,255,255,0.08)",
+                  background: "rgba(255,255,255,0.03)",
+                  borderRadius: "2px",
+                }}
+              >
+                {step}
+              </div>
+            ))}
+          </div>
+        </div>
+        <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4">
+          {SITE_SECTIONS.map((section) => (
+            <a
+              key={section.title}
+              href={section.href}
+              className="p-6 transition-all duration-300 block"
+              style={{
+                background: "#0c0e1a",
+                border: "1px solid rgba(255,255,255,0.07)",
+                borderRadius: "4px",
+                minHeight: "245px",
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.border = "1px solid rgba(60,180,200,0.32)";
+                e.currentTarget.style.background = "#101228";
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.border = "1px solid rgba(255,255,255,0.07)";
+                e.currentTarget.style.background = "#0c0e1a";
+              }}
+            >
+              <div
+                className="text-xs tracking-widest uppercase mb-4"
+                style={{ fontFamily: "'DM Mono', monospace", color: "#3cb4c8" }}
+              >
+                {section.eyebrow}
+              </div>
+              <h3
+                className="mb-4 text-base font-medium"
+                style={{ fontFamily: "'DM Sans', sans-serif", color: "#e8e9f0" }}
+              >
+                {section.title}
+              </h3>
+              <p
+                className="text-sm leading-relaxed"
+                style={{ fontFamily: "'DM Sans', sans-serif", color: "#8a8fa8" }}
+              >
+                {section.desc}
+              </p>
+            </a>
+          ))}
+        </div>
       </div>
     </section>
   );
@@ -666,6 +930,15 @@ function WhoItIsFor() {
 }
 
 function StateDesign() {
+  const stateResearchLinks = [
+    { label: "State Engineering", href: "/research/designing-human-states/state-engineering/" },
+    { label: "Flow State", href: researchFilterHref("Flow State") },
+    { label: "Breath & Nervous System", href: researchFilterHref("Breath & Nervous System") },
+    { label: "Rhythm & Entrainment", href: researchFilterHref("Rhythm & Entrainment") },
+    { label: "Light & Perception", href: researchFilterHref("Light & Perception") },
+    { label: "Music & Emotion", href: researchFilterHref("Music & Emotion") },
+  ];
+
   return (
     <section id="state-design" className="relative py-32 px-6">
       <div
@@ -689,7 +962,7 @@ function StateDesign() {
             fontSize: "clamp(2.5rem, 6vw, 5rem)",
             color: "#e8e9f0",
             fontWeight: 500,
-            letterSpacing: "-0.01em",
+            letterSpacing: 0,
           }}
         >
           State Design
@@ -725,21 +998,23 @@ function StateDesign() {
           </p>
         </div>
         <div className="flex flex-wrap justify-center gap-3">
-          {["Rhythm", "Movement", "Breath", "Music", "Light", "Space"].map(
-            (tag) => (
-              <span
-                key={tag}
+          {stateResearchLinks.map(
+            (tag, index) => (
+              <a
+                key={tag.label}
+                href={tag.href}
                 className="px-4 py-2 text-xs tracking-widest uppercase"
                 style={{
                   fontFamily: "'DM Mono', monospace",
-                  color: "#6b8ef5",
-                  border: "1px solid rgba(107,142,245,0.2)",
-                  background: "rgba(107,142,245,0.05)",
+                  color: index === 0 ? "#080a12" : "#6b8ef5",
+                  border: index === 0 ? "1px solid rgba(60,180,200,0.7)" : "1px solid rgba(107,142,245,0.2)",
+                  background: index === 0 ? "#3cb4c8" : "rgba(107,142,245,0.05)",
                   borderRadius: "2px",
+                  textDecoration: "none",
                 }}
               >
-                {tag}
-              </span>
+                {tag.label}
+              </a>
             )
           )}
         </div>
@@ -1193,7 +1468,7 @@ function Footer() {
         <div className="flex items-center gap-4">
           <img src="/sansara-icon.png" alt="Sansara" style={{ height: "24px", width: "24px", borderRadius: "6px", objectFit: "cover", opacity: 0.7 }} />
           <span style={{ color: "rgba(255,255,255,0.1)" }}>×</span>
-          <img src="/bih-logo-transparent.png" alt="Brain Innovation House" style={{ height: "26px", objectFit: "contain", opacity: 0.6 }} />
+          <img src="/assets/brain-innovation-house-logo-white.png" alt="Brain Innovation House" style={{ height: "34px", objectFit: "contain", opacity: 0.7 }} />
           <span style={{ color: "rgba(255,255,255,0.1)" }}>×</span>
           <img src="/bc-studios-logo.png" alt="BC Studios" style={{ height: "28px", objectFit: "contain", opacity: 0.4 }} />
         </div>
@@ -1218,6 +1493,7 @@ export default function Index() {
       <Nav />
       <Hero />
       <WhatThisIs />
+      <SansaraSite />
       <WhatWeDo />
       <WhoItIsFor />
       <StateDesign />

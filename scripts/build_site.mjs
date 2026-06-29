@@ -34,6 +34,29 @@ const artifactMap = {
   "next-performance-revolution-wont-happen-inside-you": "environment-system",
 };
 
+const articleResearchNoteSources = new Map([
+  ["note-rhythm-entrainment", "rhythm-infrastructure"],
+  ["note-predictive-brain", "predictive-brain-yoga-studio"],
+  ["note-breath-regulation", "beyond-homeostasis"],
+  ["note-sensory-coherence", "sensory-coherence"],
+  ["note-state-engineering", "state-engineering"],
+  ["note-elite-teaching", "elite-athletes-yoga-teachers"],
+  ["note-flow-measurement", "measure-flow"],
+  ["note-awe-beauty", "why-beauty-matters"],
+  ["note-invisible-tech", "can-technology-become-invisible"],
+  ["note-teacher-workload", "when-teaching-replaces-practice"],
+]);
+
+const discoveryStories = readDiscoveryStories("content/library/research-note-discoveries.md");
+
+const primaryNav = [
+  ["Research", "/research/"],
+  ["Training", "/training/"],
+  ["Interactive Flow", "/interactive-flow/"],
+  ["Manual", "/instruction-manual/"],
+  ["Contact", "/#contact"],
+];
+
 function parseCsv(source) {
   const rows = [];
   let row = [];
@@ -75,6 +98,40 @@ function parseCsv(source) {
 
 function readCsv(relativePath) {
   return parseCsv(fs.readFileSync(path.join(root, relativePath), "utf8"));
+}
+
+function readDiscoveryStories(relativePath) {
+  const fullPath = path.join(root, relativePath);
+  if (!fs.existsSync(fullPath)) return {};
+
+  const source = fs.readFileSync(fullPath, "utf8");
+  const stories = {};
+  let currentId = "";
+  let currentKey = "";
+
+  for (const raw of source.split("\n")) {
+    const line = raw.trim();
+    const heading = line.match(/^##\s+(note-[a-z0-9-]+)\s*$/);
+    if (heading) {
+      currentId = heading[1];
+      stories[currentId] = {};
+      currentKey = "";
+      continue;
+    }
+
+    const field = line.match(/^-\s+(Year|Discovery|Result):\s*(.*)$/);
+    if (field && currentId) {
+      currentKey = field[1].toLowerCase() === "discovery" ? "scene" : field[1].toLowerCase();
+      stories[currentId][currentKey] = field[2].trim();
+      continue;
+    }
+
+    if (currentId && currentKey && line) {
+      stories[currentId][currentKey] = `${stories[currentId][currentKey]} ${line}`.trim();
+    }
+  }
+
+  return stories;
 }
 
 function ensureDir(dir) {
@@ -128,9 +185,25 @@ function headingKey(value = "") {
   return value.toLowerCase().replace(/[^a-z0-9&]+/g, " ").replace(/\s+/g, " ").trim();
 }
 
+function stripMarkdownSection(markdown, headingTitle) {
+  const targetKey = headingKey(headingTitle);
+  let skipping = false;
+  return markdown.split("\n").filter((line) => {
+    const heading = line.match(/^(#{1,6})\s+(.+)$/);
+    if (heading && heading[1].length <= 2 && headingKey(heading[2]) === targetKey) {
+      skipping = true;
+      return false;
+    }
+    if (skipping && heading && heading[1].length <= 2) {
+      skipping = false;
+    }
+    return !skipping;
+  }).join("\n");
+}
+
 function articleBodyMarkdown(markdown, title = "") {
   const titleKey = headingKey(title);
-  return stripFrontmatter(markdown)
+  return stripMarkdownSection(stripFrontmatter(markdown), "Research Notes")
     .replace(/^\s*#\s+.+\n+/, "")
     .split("\n")
     .filter((line) => {
@@ -163,6 +236,13 @@ function readingTime(markdown) {
 
 function escapeRegExp(value = "") {
   return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+}
+
+function scriptJson(value) {
+  return JSON.stringify(value)
+    .replaceAll("<", "\\u003c")
+    .replaceAll(">", "\\u003e")
+    .replaceAll("&", "\\u0026");
 }
 
 function linkResearcherNames(html) {
@@ -329,7 +409,69 @@ function researcherRoute(row) {
   return `/research/researchers/${row.researcher_id}/`;
 }
 
+const issueJourneyActs = [
+  {
+    label: "I",
+    title: "The Environment Shapes the Mind",
+    dockTitle: "Environment",
+    meta: "space / light / rhythm",
+    target: "act-environment-shapes-mind",
+    description: "Performance begins in the conditions around us: space, light, rhythm, sound, and atmosphere.",
+  },
+  {
+    label: "II",
+    title: "The Brain as a Predictive Organism",
+    dockTitle: "Prediction",
+    meta: "brain / body / signal",
+    target: "act-predictive-organism",
+    description: "The nervous system anticipates, tests, adapts, and learns through the signals around it.",
+  },
+  {
+    label: "III",
+    title: "Flow and State Engineering",
+    dockTitle: "Flow + State",
+    meta: "attention / synchrony",
+    target: "act-state-engineering",
+    description: "Flow emerges when attention, rhythm, feedback, and group synchrony reduce friction around action.",
+  },
+  {
+    label: "IV",
+    title: "The Future",
+    dockTitle: "Future",
+    meta: "adaptive rooms",
+    target: "act-future",
+    description: "The future is environmental: adaptive rooms, coherent sensory systems, and technologies that shape human state.",
+  },
+];
+
+function issueJourneyDock() {
+  const links = issueJourneyActs.map((act, index) => `<a class="${index === 0 ? "active" : ""}" href="#${act.target}" data-journey-dock-link data-target="${act.target}" title="${escapeHtml(act.title)}"><span>${act.label}</span>${escapeHtml(act.dockTitle || act.title)}</a>`).join("");
+  return `<nav class="issue-journey-dock" data-journey-dock aria-label="Issue journey">
+    <strong>Issue path</strong>
+    ${links}
+  </nav>`;
+}
+
 function artifact(kind = "curve", title = "Session state", label = "") {
+  if (kind === "state-design") {
+    const points = issueJourneyActs.map((act, index) => `<button class="journey-point journey-point-${index + 1}${index === 0 ? " active" : ""}" type="button" data-journey-point data-target="${act.target}" data-title="${escapeHtml(act.title)}" data-description="${escapeHtml(act.description)}" aria-controls="journey-detail" aria-expanded="${index === 0 ? "true" : "false"}"><span>${act.label}</span><strong>${escapeHtml(act.title)}</strong><small>${escapeHtml(act.meta)}</small></button>`).join("");
+    return `<div class="artifact journey-artifact is-ready" data-journey-artifact aria-label="Issue 1 journey path">
+      <div class="artifact-label">Issue 1 / journey path</div>
+      <div class="journey-map">
+        <svg class="journey-route" viewBox="0 0 520 360" preserveAspectRatio="none" focusable="false">
+          <path class="journey-route-shadow" d="M54 306 C118 250 72 187 150 155 C231 121 230 58 322 75 C405 91 379 174 458 202 C498 216 489 264 452 304"></path>
+          <path class="journey-route-line" d="M54 306 C118 250 72 187 150 155 C231 121 230 58 322 75 C405 91 379 174 458 202 C498 216 489 264 452 304"></path>
+        </svg>
+        ${points}
+      </div>
+      <div class="journey-detail" id="journey-detail" data-journey-detail aria-live="polite">
+        <span>Act I</span>
+        <h2>Environment</h2>
+        <p>Performance begins in the conditions around us: space, light, rhythm, sound, and atmosphere.</p>
+      </div>
+      <div class="journey-compass"><span>Begin with conditions</span><button class="journey-tour" type="button" data-journey-tour>Discover</button><span>Arrive at design</span></div>
+    </div>`;
+  }
   if (kind === "split-room") {
     return `<div class="artifact" aria-label="Split room comparison">
       <div class="artifact-label">Visual artifact / room state comparison</div>
@@ -383,7 +525,14 @@ function layout({
   brandHref = "/research/",
   titleSuffix = "Sansara Research",
   section = "research",
+  bodyClass = "",
 }) {
+  const progressBar = section === "research" ? `<div class="reading-progress" data-progress aria-hidden="true"></div>` : "";
+  const currentReading = section === "research" ? `<aside class="currently-reading" data-current-reading aria-live="polite">
+    <span>Currently reading</span>
+    <strong>Research</strong>
+    <small>0%</small>
+  </aside>` : "";
   const researchSubnav = section === "research" ? `<nav class="section-nav" aria-label="Research navigation">
     <a href="/research/issue-1/">Issue 1</a>
     <a href="/research/themes/">Themes</a>
@@ -399,24 +548,28 @@ function layout({
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>${escapeHtml(title)} - ${escapeHtml(titleSuffix)}</title>
   <meta name="description" content="${escapeHtml(description)}">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;500;600&family=DM+Sans:wght@300;400;500&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="/assets/styles.css">
 </head>
-<body>
+<body${bodyClass ? ` class="${escapeHtml(bodyClass)}"` : ""}>
   <div class="site-shell">
+    ${progressBar}
     <header class="topbar">
       <div class="topbar-inner">
-        <a class="brand" href="${escapeHtml(brandHref)}"><span class="brand-mark">Sansara</span><span class="brand-sub">${escapeHtml(brandSub)}</span></a>
+        <a class="brand" href="${escapeHtml(brandHref)}">
+          <img class="brand-logo" src="/assets/brain-innovation-house-logo-white.png" alt="Brain Innovation House">
+          <span class="brand-sub">${escapeHtml(brandSub)}</span>
+        </a>
         <nav class="nav" aria-label="Primary navigation">
-          <a href="/training/">Training</a>
-          <a href="/research/">Research</a>
-          <a href="/interactive-flow/">Interactive Flow</a>
-          <a href="/instruction-manual/">Manual</a>
-          <a href="/#collaborate">Collaborate</a>
+          ${primaryNav.map(([label, href]) => `<a href="${href}">${label}</a>`).join("\n          ")}
         </nav>
       </div>
     </header>
     ${researchSubnav}
     ${body}
+    ${currentReading}
     <footer class="footer">
       <div class="footer-inner">
         <span>Design the whole room, not just the playlist.</span>
@@ -447,6 +600,7 @@ function siteFeatureCard({ eyebrow, title, description, href }) {
 }
 
 function siteHomePage() {
+  const researchFilterHref = (filter) => `/research/home/?filter=${encodeURIComponent(filter)}#research-tools`;
   const features = [
     {
       eyebrow: "Build",
@@ -469,10 +623,18 @@ function siteHomePage() {
     {
       eyebrow: "Think",
       title: "Research Journal",
-      description: "Issue 1, themes, sensory map, timeline and notes all live inside the research section.",
+      description: "Issue 1, research areas, sensory map, timeline and notes all live inside the research section.",
       href: "/research/",
     },
   ].map(siteFeatureCard).join("");
+  const stateLinks = [
+    ["State Engineering", "/research/designing-human-states/state-engineering/"],
+    ["Flow State", researchFilterHref("Flow State")],
+    ["Breath & Nervous System", researchFilterHref("Breath & Nervous System")],
+    ["Rhythm & Entrainment", researchFilterHref("Rhythm & Entrainment")],
+    ["Light & Perception", researchFilterHref("Light & Perception")],
+    ["Music & Emotion", researchFilterHref("Music & Emotion")],
+  ].map(([label, href], index) => `<a class="button${index === 0 ? " primary" : ""}" href="${href}">${label}</a>`).join("");
   const body = `<main>
     <section class="hero site-hero">
       <div class="hero-inner">
@@ -480,9 +642,9 @@ function siteHomePage() {
           <div class="eyebrow">Sansara</div>
           <h1>Design states, not just sessions.</h1>
           <p class="lead">A system for immersive yoga and human-state design: research, training, interactive flow building, and practical instruction in one place.</p>
-          <p class="thesis">Research supports the method, but it is not the whole website. The public structure separates the journal from training, tools, manuals and collaboration.</p>
+          <p class="thesis">Founder-led across London and Beirut, Sansara brings neuroscience, yoga, software, music, light and AI media into one practical method.</p>
           <div class="hero-actions">
-            <a class="button primary" href="/training/">Explore training</a>
+            <a class="button primary" href="/#collaborate">Meet the founders</a>
             <a class="button" href="/research/">Open research</a>
           </div>
         </div>
@@ -492,8 +654,8 @@ function siteHomePage() {
     <section class="band">
       <div class="band-inner">
         <div class="section-head">
-          <h2>Website Structure</h2>
-          <p>Research stays in /research/. Product, training and collaboration sit at the Sansara website level.</p>
+          <h2>What Sansara Is</h2>
+          <p>A state-design system for immersive yoga: part method, part platform, part research translation layer.</p>
         </div>
         <div class="site-feature-grid">${features}</div>
       </div>
@@ -501,9 +663,43 @@ function siteHomePage() {
     <section class="band" id="collaborate">
       <div class="band-inner training-lead-grid">
         <div>
-          <div class="eyebrow">Join / collaborate</div>
-          <h2>Build with us.</h2>
-          <p>Join the waiting list, bring Sansara into a studio, collaborate on research, or ask about teacher training and immersive class design.</p>
+          <div class="eyebrow">Founder collaboration</div>
+          <h2>Anastasia Smirnova and Alexandre Khoury.</h2>
+          <p>Sansara is built by Brain Innovation House in London and BC Studios in Beirut: neuroscience, software, yoga, music, light and immersive media working as one operating team.</p>
+          <div class="hero-actions">
+            <a class="button primary" href="/#contact">Start a collaboration</a>
+            <a class="button" href="/research/">Read the research</a>
+          </div>
+        </div>
+        <div class="site-feature-grid">
+          <div class="site-feature-card">
+            <span>London</span>
+            <h3>Anastasia Smirnova</h3>
+            <p>Neuroscientist, software engineer, yoga teacher, and founder of Brain Innovation House.</p>
+          </div>
+          <div class="site-feature-card">
+            <span>Beirut</span>
+            <h3>Alexandre Khoury</h3>
+            <p>Creative technologist, media innovator, and founder of BC Studios.</p>
+          </div>
+        </div>
+      </div>
+    </section>
+    <section class="band" id="state-design">
+      <div class="band-inner">
+        <div class="section-head">
+          <h2>State Design</h2>
+          <p>State design shapes rhythm, movement, breath, music, light and space so classes can support attention, regulation, connection, recovery and flow.</p>
+        </div>
+        <div class="hero-actions">${stateLinks}</div>
+      </div>
+    </section>
+    <section class="band" id="contact">
+      <div class="band-inner training-lead-grid">
+        <div>
+          <div class="eyebrow">Get in touch</div>
+          <h2>Start the conversation.</h2>
+          <p>Bring Sansara into a studio, collaborate on research, or ask about teacher training and immersive class design.</p>
         </div>
         <form class="lead-form" data-training-form data-mailto="hello@sansara.yoga">
           <label>Name <input name="name" autocomplete="name" required></label>
@@ -610,22 +806,51 @@ function trainingProgramPage() {
     ["Professional readiness", "Teaching practice, relay teaching, safety, scope, ethics, studio delivery, and feedback-based assessment."],
   ];
 
+  const eventDetails = [
+    ["Dates", "August 28-29"],
+    ["Venue", "Namat Beirut"],
+    ["Location", "Waterfront City"],
+    ["Format", "Two-day in-person workshop"],
+  ];
+
+  const audience = [
+    ["Yoga teachers", "Teachers who want stronger class arcs, clearer cueing, and more intentional sensory design."],
+    ["Studio owners", "Operators building premium workshop formats, signature classes, or teacher development programs."],
+    ["Experience creators", "Movement, music, light, and wellness creators designing immersive group experiences."],
+  ];
+
+  const trustPoints = [
+    ["Built from practice", "The workshop stays rooted in yoga teaching, live delivery, and responsible facilitation."],
+    ["Backed by research language", "Sansara translates nervous-system literacy, rhythm, light, attention, and state design into practical teaching choices."],
+    ["Supported by tools", "Participants work with Sansara planning language and app workflows so the method can be reused after the weekend."],
+  ];
+
   const body = `<main class="training-page">
-    <section class="training-hero" style="--hero-image:url('/assets/training-hero.png')">
+    <section class="training-hero" style="--hero-image:url('/assets/training-hero-teachers-light.png')">
       <div class="training-hero-inner">
           <div class="eyebrow">Two-day workshop</div>
         <h1>Sansara Teacher Workshop</h1>
-        <p class="lead">A breath-led, music-driven, light-aware workshop for teachers who want to guide state transitions, not just pose sequences.</p>
-        <p class="training-hero-copy">Across two practical days, participants learn to build complete class arcs through breath, rhythm, movement, attention, environment, and responsible facilitation.</p>
+        <p class="lead">A two-day teacher workshop for designing unforgettable yoga classes through breath, music, movement, light, and state.</p>
+        <p class="training-hero-copy">August 28-29 at Namat Beirut, Waterfront City. Leave with a complete signature class, a practical state-design framework, and tools you can use immediately in your teaching.</p>
         <div class="hero-actions">
-          <a class="button primary" href="#inquiry">Request workshop details</a>
-          <a class="button" href="#inside">See what's inside</a>
+          <a class="button primary" href="#inquiry">Apply for August 28-29</a>
+          <a class="button" href="#inside">See the curriculum</a>
         </div>
         <div class="training-hero-proof" aria-label="Program highlights">
-          <span>Two-day format</span>
+          <span>August 28-29</span>
+          <span>Namat Beirut</span>
+          <span>Waterfront City</span>
           <span>4BEAT method</span>
           <span>App practicum</span>
           <span>Teaching lab</span>
+        </div>
+      </div>
+    </section>
+
+    <section class="band training-event">
+      <div class="band-inner">
+        <div class="training-detail-grid" aria-label="Workshop details">
+          ${eventDetails.map(([label, value]) => `<article><span>${escapeHtml(label)}</span><strong>${escapeHtml(value)}</strong></article>`).join("")}
         </div>
       </div>
     </section>
@@ -639,6 +864,18 @@ function trainingProgramPage() {
         <div class="training-intro-copy">
           <p>Sansara treats class design as state design. Breath sets the internal rhythm. Music provides an external regulator. Light shapes the room. Movement expresses the arc. Awareness is the outcome.</p>
           <p>The training keeps yoga practice at the center while giving teachers a modern, agnostic language for sensation, nervous-system literacy, sequencing, ethics, and immersive delivery.</p>
+        </div>
+      </div>
+    </section>
+
+    <section class="band">
+      <div class="band-inner">
+        <div class="section-head">
+          <h2>Who It's For</h2>
+          <p>For teachers and studio teams who want a more complete class-design language, not another disconnected technique list.</p>
+        </div>
+        <div class="training-audience-grid">
+          ${audience.map(([title, text]) => `<article><h3>${escapeHtml(title)}</h3><p>${escapeHtml(text)}</p></article>`).join("")}
         </div>
       </div>
     </section>
@@ -679,12 +916,24 @@ function trainingProgramPage() {
       </div>
     </section>
 
+    <section class="band training-trust">
+      <div class="band-inner">
+        <div class="section-head">
+          <h2>Why Sansara</h2>
+          <p>The method connects embodied teaching, room design, rhythm, light, and app-supported planning without turning yoga into a technical performance.</p>
+        </div>
+        <div class="training-audience-grid">
+          ${trustPoints.map(([title, text]) => `<article><h3>${escapeHtml(title)}</h3><p>${escapeHtml(text)}</p></article>`).join("")}
+        </div>
+      </div>
+    </section>
+
     <section class="band" id="inquiry">
       <div class="band-inner training-lead-grid">
         <div>
           <div class="eyebrow">Workshop inquiry</div>
-          <h2>Request workshop details.</h2>
-          <p>Tell us where you are in your teaching path and what kind of classes you want to build. We will send the two-day workshop overview and upcoming dates.</p>
+          <h2>Apply for August 28-29.</h2>
+          <p>The next two-day workshop runs August 28-29 at Namat Beirut, Waterfront City. Tell us where you are in your teaching path and what kind of classes you want to build, and we will send the Beirut workshop pack.</p>
         </div>
         <form class="lead-form" data-training-form data-mailto="hello@sansara.yoga">
           <label>Name <input name="name" autocomplete="name" required></label>
@@ -695,8 +944,8 @@ function trainingProgramPage() {
             <option>Studio owner / operator</option>
             <option>Immersive experience creator</option>
           </select></label>
-          <label>What are you interested in? <textarea name="message" rows="4" placeholder="Tell us about your goals, location, and ideal training format."></textarea></label>
-          <button class="button primary" type="submit">Send inquiry</button>
+          <label>What are you interested in? <textarea name="message" rows="4" placeholder="Tell us about your teaching goals and the class experience you want to build."></textarea></label>
+          <button class="button primary" type="submit">Send me the workshop pack</button>
           <p class="form-note">This opens an email draft so your note can be sent directly.</p>
         </form>
       </div>
@@ -712,6 +961,7 @@ function trainingProgramPage() {
     brandHref: "/training/",
     titleSuffix: "Sansara",
     section: "site",
+    bodyClass: "training-shell",
   });
 }
 
@@ -734,14 +984,50 @@ function aliasPage({ title, target }) {
 </html>`;
 }
 
+function contentActions({
+  href,
+  readLabel = "Read",
+  bookmarkLabel = "Bookmark",
+  savedLabel = "Bookmarked",
+  readFlagLabel = "Read already",
+  readSavedLabel = "Read",
+}) {
+  return `<div class="article-card-actions">
+      <a class="mini-button" href="${escapeHtml(href)}">${escapeHtml(readLabel)}</a>
+      <button class="mini-button" type="button" data-bookmark="${escapeHtml(href)}" data-bookmark-label="${escapeHtml(bookmarkLabel)}" data-bookmark-saved-label="${escapeHtml(savedLabel)}">${escapeHtml(bookmarkLabel)}</button>
+      <button class="mini-button" type="button" data-read-flag="${escapeHtml(href)}" data-read-label="${escapeHtml(readFlagLabel)}" data-read-saved-label="${escapeHtml(readSavedLabel)}">${escapeHtml(readFlagLabel)}</button>
+    </div>`;
+}
+
 function articleCard(article) {
   const tags = article.tags.join("|");
-  return `<article class="article-card" data-tags="${escapeHtml(tags)}">
-    <div class="card-top"><span>${escapeHtml(essayLabel(article))}</span><span class="status">${article.status.replaceAll("_", " ")}</span></div>
+  const preview = articlePreview(article);
+  return `<article class="article-card" data-article-card data-content-card data-tags="${escapeHtml(tags)}" data-title="${escapeHtml(article.title)}" data-route="${escapeHtml(article.route)}" tabindex="0">
+    <div class="card-top"><span>${escapeHtml(essayLabel(article))} · ${article.minutes} min</span><span class="status">${article.status.replaceAll("_", " ")}</span></div>
     <h3><a href="${article.route}">${escapeHtml(article.title)}</a></h3>
     <p>${escapeHtml(article.thesis)}</p>
-    <div class="tag-row">${article.tags.slice(0, 3).map((tag) => `<a class="tag" href="${tagLink(tag)}">${escapeHtml(tag)}</a>`).join("")}</div>
+    <div class="article-card-actions">
+      <button class="mini-button" type="button" data-preview-toggle>Preview</button>
+      <a class="mini-button" href="${escapeHtml(article.route)}">Read</a>
+      <button class="mini-button" type="button" data-bookmark="${escapeHtml(article.route)}" data-bookmark-label="Bookmark" data-bookmark-saved-label="Bookmarked">Bookmark</button>
+      <button class="mini-button" type="button" data-read-flag="${escapeHtml(article.route)}" data-read-label="Read already" data-read-saved-label="Read">Read already</button>
+    </div>
+    <div class="article-preview" hidden data-preview>
+      ${preview.map((paragraph) => `<p>${escapeHtml(paragraph)}</p>`).join("")}
+      <a class="inline-read-link" href="${article.route}">Open full essay</a>
+    </div>
+    <div class="tag-row">${article.tags.slice(0, 3).map((tag) => `<a class="tag" href="${tagLink(tag)}" data-filter-tag="${escapeHtml(tag)}">${escapeHtml(tag)}</a>`).join("")}</div>
   </article>`;
+}
+
+function articlePreview(article) {
+  return articleBodyMarkdown(article.markdown, article.title)
+    .replace(/\[[^\]]+\]\([^)]+\)/g, "$1")
+    .replace(/[#*_`>-]/g, "")
+    .split(/\n+/)
+    .map((line) => line.trim())
+    .filter((line) => line.length > 80)
+    .slice(0, 2);
 }
 
 function sensoryNodeLink(row) {
@@ -841,6 +1127,14 @@ function startHereArticles(tagged, tag) {
   return tagged.filter((article) => article.article_number).slice(0, 4);
 }
 
+function themeArticlesFor(tag) {
+  const profile = themeProfileFor(tag);
+  const bySlug = new Map(allArticles.map((article) => [article.slug, article]));
+  const curated = profile.startSlugs.map((slug) => bySlug.get(slug)).filter(Boolean);
+  if (curated.length) return curated;
+  return allArticles.filter((article) => article.tags.includes(tag)).slice(0, 5);
+}
+
 function articleLabel(article) {
   return essayLabel(article);
 }
@@ -925,7 +1219,7 @@ function sensoryCanvas() {
     const [left, top] = nodePositions.get(row.node_id) || ["50%", "50%"];
     const articles = articlesForSensoryRows([row]);
     const notes = researchNotesForSensoryNode(row);
-    return `<a class="mind-node canvas-concept-node map-node-${escapeHtml(slugify(row.domain))}" href="${notes[0] ? researchNoteRoute(notes[0]) : "#note-discovery"}" style="--x:${left};--y:${top}">
+    return `<a class="mind-node canvas-concept-node map-node-${escapeHtml(slugify(row.domain))}" id="${escapeHtml(row.node_id)}" href="${notes[0] ? researchNoteRoute(notes[0]) : "#note-discovery"}" style="--x:${left};--y:${top}">
       <strong>${escapeHtml(row.label)}</strong>
       <span>${escapeHtml(splitValues(row.state_outcomes).slice(0, 2).join(" + "))}</span>
       <small>${articles.length} essays · ${notes.length} notes</small>
@@ -962,7 +1256,7 @@ function sensoryCanvas() {
     <aside class="note-discovery-panel" id="note-discovery" aria-label="Research note discovery">
       <div class="note-panel-head">
         <span>Research Notes</span>
-        <strong>${researchNoteRows.length} linked concepts</strong>
+        <strong>${researchNoteRows.length} linked research notes</strong>
       </div>
       <div class="note-card-list">${noteCards}</div>
     </aside>
@@ -983,7 +1277,7 @@ function sensoryMapPage() {
           <p class="thesis">This is not a second taxonomy. It is the working map under the research: light, rhythm, breath, sound, space, attention, synchrony and the notes that explain them.</p>
           <div class="hero-actions">
             <a class="button primary" href="#note-discovery">Browse notes</a>
-            <a class="button" href="/research/themes/">Open themes</a>
+            <a class="button" href="/research/issue-1/">Open Issue 1</a>
           </div>
         </div>
       </div>
@@ -995,16 +1289,17 @@ function sensoryMapPage() {
 
 function researchStat(label, value, href) {
   return `<a class="research-stat" href="${href}">
-    <strong>${escapeHtml(String(value))}</strong>
+    <strong data-counter="${escapeHtml(String(value))}">0</strong>
     <span>${escapeHtml(label)}</span>
   </a>`;
 }
 
 function researchPortal({ title, href, eyebrow, description }) {
-  return `<article class="research-portal">
+  return `<article class="research-portal" data-content-card tabindex="0">
     <div class="card-top"><span>${escapeHtml(eyebrow)}</span><span class="status">Open</span></div>
     <h3><a href="${href}">${escapeHtml(title)}</a></h3>
     <p>${escapeHtml(description)}</p>
+    ${contentActions({ href, readLabel: "Read", bookmarkLabel: "Bookmark", savedLabel: "Bookmarked" })}
   </article>`;
 }
 
@@ -1014,12 +1309,12 @@ function researchHomePage() {
     .filter(Boolean);
   const timelinePreview = timelineRows.slice(-5).reverse().map(timelineItem).join("");
   const notePreview = researchNoteRows.slice(0, 6).map(researchNoteCard).join("");
-  const themePreview = [...tagSlugs.keys()].map((tag) => {
-    const count = allArticles.filter((article) => article.tags.includes(tag)).length;
+  const areaPreview = [...tagSlugs.keys()].map((tag) => {
+    const count = themeArticlesFor(tag).length;
     return `<a class="research-tag-card" href="${tagLink(tag)}">
       <strong>${escapeHtml(tag)}</strong>
       <span>${count} ${count === 1 ? "essay" : "essays"}</span>
-      <small>${escapeHtml(tagDescriptions[tag] || "Research theme")}</small>
+      <small>${escapeHtml(tagDescriptions[tag] || "Research area")}</small>
     </a>`;
   }).join("");
   const portals = [
@@ -1030,16 +1325,10 @@ function researchHomePage() {
       description: "The manifesto issue: one coherent argument arranged in four acts.",
     },
     {
-      title: "Themes",
-      href: "/research/themes/",
-      eyebrow: "Reader pathways",
-      description: "Five broad ways into the same issue: light, rhythm, breath, music, and flow.",
-    },
-    {
       title: "Sensory Map",
       href: "/research/sensory-map/",
       eyebrow: "Experience system",
-      description: "The connected map beneath the themes: sensory variables, linked systems, and state outcomes.",
+      description: "The connected map of sensory variables, linked systems, and state outcomes.",
     },
     {
       title: "Timeline",
@@ -1051,7 +1340,7 @@ function researchHomePage() {
       title: "Research Notes",
       href: "/research/notes/",
       eyebrow: "Evidence base",
-      description: "Concept notes that connect sources, researchers, essays, and next editorial actions.",
+      description: "Source-backed notes that connect discoveries, theories, researchers, essays, and next editorial actions.",
     },
     {
       title: "Researchers",
@@ -1064,17 +1353,48 @@ function researchHomePage() {
     .filter((item) => !item.slug.includes("designing-states") && !item.slug.includes("next-performance"))
     .map(articleCard)
     .join("");
+  const searchIndex = [
+    ...allArticles.map((article) => ({
+      type: article.type === "canonical" ? "Issue essay" : "Companion essay",
+      title: article.title,
+      href: article.route,
+      text: `${article.thesis} ${article.excerpt}`,
+      tags: article.tags,
+      minutes: article.minutes,
+    })),
+    ...researchNoteRows.map((note) => ({
+      type: "Research note",
+      title: note.concept,
+      href: researchNoteRoute(note),
+      text: `${note.core_question || ""} ${note.summary || ""}`,
+      tags: splitValues(note.related_tags),
+    })),
+    ...researcherRows.map((researcher) => ({
+      type: "Researcher",
+      title: researcher.name,
+      href: researcherRoute(researcher),
+      text: `${researcher.field} ${researcher.known_for}`,
+      tags: splitValues(researcher.primary_tags),
+    })),
+    ...[...tagSlugs.keys()].map((tag) => ({
+      type: "Research area",
+      title: tag,
+      href: tagLink(tag),
+      text: tagDescriptions[tag] || "",
+      tags: [tag],
+    })),
+  ];
   const body = `<main>
     <section class="hero">
       <div class="hero-inner research-home-hero">
         <div>
           <div class="eyebrow">Research home</div>
           <h1>Research</h1>
-          <p class="lead">Everything in the Sansara research system: Issue 1, companion essays, themes, sensory map, timeline, notes, and researchers.</p>
+          <p class="lead">Everything in the Sansara research system: Issue 1, companion essays, sensory map, timeline, notes, and researchers.</p>
           <p class="thesis">Use this page as the table of contents for the whole project. Issue 1 is the main argument; the other views help readers enter, trace, and extend it.</p>
           <div class="hero-actions">
             <a class="button primary" href="/research/issue-1/">Open Issue 1</a>
-            <a class="button" href="/research/themes/">Browse themes</a>
+            <a class="button" href="/research/sensory-map/">Open sensory map</a>
           </div>
         </div>
         ${artifact("system-map", "Research system")}
@@ -1085,10 +1405,33 @@ function researchHomePage() {
         <div class="research-stats" aria-label="Research inventory">
           ${researchStat("issue essays", canonical.length, "/research/issue-1/")}
           ${researchStat("companion essays", sideArticles.length, "#companion-essays")}
-          ${researchStat("themes", tagSlugs.size, "/research/themes/")}
           ${researchStat("research notes", researchNoteRows.length, "/research/notes/")}
           ${researchStat("timeline entries", timelineRows.length, "/research/timeline/")}
           ${researchStat("sensory nodes", sensoryRows.length, "/research/sensory-map/")}
+        </div>
+      </div>
+    </section>
+    <section class="band research-tools" id="research-tools">
+      <div class="band-inner">
+        <div class="research-tool-panel">
+          <div class="section-head">
+            <h2>Search the Research</h2>
+            <p>Search across essays, companion pieces, notes, researchers, and research areas. Use tags to cross-filter the article cards.</p>
+          </div>
+          <div class="research-search-row">
+            <label class="research-search">
+              <span>Search</span>
+              <input type="search" data-research-search placeholder="Try light, rhythm, flow, predictive brain...">
+            </label>
+            <button class="button primary" type="button" data-open-subscribe>Subscribe to journal</button>
+          </div>
+          <div class="filters research-tag-filters" aria-label="Research area filters">
+            <button class="filter-chip active" type="button" data-filter="all">All</button>
+            ${[...tagSlugs.keys()].map((tag) => `<button class="filter-chip" type="button" data-filter="${escapeHtml(tag)}">${escapeHtml(tag)}</button>`).join("")}
+          </div>
+          <div class="saved-research" data-saved-summary>Saved items: 0</div>
+          <div class="search-results" data-search-results aria-live="polite"></div>
+          <script type="application/json" data-search-index>${scriptJson(searchIndex)}</script>
         </div>
       </div>
     </section>
@@ -1096,7 +1439,7 @@ function researchHomePage() {
       <div class="band-inner">
         <div class="section-head">
           <h2>Explore</h2>
-          <p>Issue 1 is the central object. Themes, map, timeline and notes are different ways to move through the same research system.</p>
+          <p>Issue 1 is the central object. The map, timeline, notes, and researcher profiles are different ways to move through the same research system.</p>
         </div>
         <div class="research-portal-grid">${portals}</div>
       </div>
@@ -1113,10 +1456,10 @@ function researchHomePage() {
     <section class="band">
       <div class="band-inner">
         <div class="section-head">
-          <h2>Themes</h2>
-          <p>Reader-facing pathways into Issue 1 and its companion essays.</p>
+          <h2>Research Areas</h2>
+          <p>Topic pathways into Issue 1 and its companion essays.</p>
         </div>
-        <div class="research-tag-grid">${themePreview}</div>
+        <div class="research-tag-grid">${areaPreview}</div>
       </div>
     </section>
     <section class="band">
@@ -1133,7 +1476,7 @@ function researchHomePage() {
       <div class="band-inner">
         <div class="section-head">
           <h2>Research Notes Preview</h2>
-          <p>Concept notes connect the polished essays to sources, scientists, and editorial next steps.</p>
+          <p>Source-backed notes connect the polished essays to discoveries, theories, scientists, and editorial next steps.</p>
         </div>
         <div class="article-grid">${notePreview}</div>
         <div class="hero-actions" style="margin-top:24px"><a class="button" href="/research/notes/">Open all notes</a></div>
@@ -1148,8 +1491,27 @@ function researchHomePage() {
         <div class="side-grid">${sidePreview}</div>
       </div>
     </section>
+    <div class="journal-modal" data-subscribe-modal hidden>
+      <div class="journal-modal-backdrop" data-close-subscribe></div>
+      <form class="journal-subscribe" data-journal-subscribe>
+        <button class="modal-close" type="button" data-close-subscribe aria-label="Close subscribe form">Close</button>
+        <span class="eyebrow">Sansara Research Journal</span>
+        <h2>Subscribe to the journal</h2>
+        <p>Get new essays, notes, and research updates as the Sansara system develops.</p>
+        <label>Name <input name="name" autocomplete="name"></label>
+        <label>Email <input name="email" type="email" autocomplete="email" required></label>
+        <label>Interest <select name="interest">
+          <option>Research updates</option>
+          <option>Teacher training</option>
+          <option>Studio collaboration</option>
+          <option>Investment / partnerships</option>
+        </select></label>
+        <button class="button primary" type="submit">Join mailing list</button>
+        <p class="form-note" data-subscribe-note>Your email is saved locally here and prepared as an email draft for now.</p>
+      </form>
+    </div>
   </main>`;
-  return layout({ title: "Research Home", description: "Home for the Sansara research journal, timeline, sensory map, notes, researchers, themes, and essays.", body, current: "Research home" });
+  return layout({ title: "Research Home", description: "Home for the Sansara research journal, timeline, sensory map, notes, researchers, and essays.", body, current: "Research home" });
 }
 
 const articleActs = [
@@ -1233,7 +1595,7 @@ function hubPage() {
       <div class="band-inner">
         <div class="section-head">
           <h2>Issue Essays</h2>
-          <p>${canonical.length} essays form the spine of Issue 1. Read them linearly as one manifesto, or filter by embodied theme.</p>
+          <p>${canonical.length} essays form the spine of Issue 1. Read them linearly as one manifesto, or filter by research area.</p>
         </div>
         <div class="filters" aria-label="Essay filters">
           <button class="filter-chip active" data-filter="all">All</button>
@@ -1279,7 +1641,7 @@ function timelineItem(row) {
   return `<article class="timeline-item">
     <div class="timeline-year">${escapeHtml(row.date_label || row.year)}</div>
     <div class="timeline-card">
-      <h3>${escapeHtml(row.researcher_or_group)}</h3>
+      <h3>${linkResearcherNames(escapeHtml(row.researcher_or_group))}</h3>
       <p>${escapeHtml(row.event)}</p>
       <div class="timeline-meta">
         ${timelineTopicTag(row)}
@@ -1292,6 +1654,19 @@ function timelineItem(row) {
 
 function timelinePage() {
   const grouped = timelineRows.map(timelineItem).join("");
+  const linkedTimelineArticles = timelineRows.flatMap(timelineReferencedArticles);
+  const uniqueTimelineArticles = new Map(linkedTimelineArticles.map((article) => [article.slug, article]));
+  const timelineSourceIds = new Set(timelineRows.map((row) => row.source_id).filter(Boolean));
+  const panel = evidencePanel({
+    title: "Lineage Counts",
+    eyebrow: "Research lineage",
+    note: "Counts timeline entries directly; essay references are supporting connections, not extra entries.",
+    stats: [
+      evidenceStat("lineage entries", timelineRows.length),
+      evidenceStat("linked essays", uniqueTimelineArticles.size, "/research/issue-1/"),
+      evidenceStat("source records", timelineSourceIds.size, "/research/notes/"),
+    ],
+  });
   const body = `<main>
     <section class="hero">
       <div class="hero-inner timeline-hero-inner">
@@ -1301,13 +1676,14 @@ function timelinePage() {
           <p class="lead">A curated lineage of the discoveries, theories and experiments behind the Sansara journal.</p>
           <p class="thesis">Follow the ideas that connect perception, recovery, rhythm, flow, prediction and environmental design across Issue 1.</p>
         </div>
+        ${panel}
       </div>
     </section>
     <section class="band">
       <div class="band-inner">
         <div class="section-head">
           <h2>Research Lineage</h2>
-          <p>Each entry links a landmark idea to the essays, themes and design questions it supports.</p>
+          <p>Each entry connects a landmark idea to the essays, research areas and design questions it supports.</p>
         </div>
         <div class="timeline">${grouped}</div>
       </div>
@@ -1348,6 +1724,38 @@ function sourceCitation(sourceId) {
   </li>`;
 }
 
+function notesForSourceId(sourceId) {
+  return researchNoteRows.filter((note) => splitValues(note.source_ids).includes(sourceId));
+}
+
+function sourceResearchConnection(sourceId) {
+  const reference = referencesById.get(sourceId);
+  const linkedNotes = notesForSourceId(sourceId);
+  if (!reference) {
+    return `<li>
+      <h3>${escapeHtml(sourceLabel(sourceId))}</h3>
+      <p>${linkedNotes.length
+        ? `Supports ${linkedNotes.map((note) => `<a href="${researchNoteRoute(note)}">${escapeHtml(note.concept)}</a>`).join("; ")}.`
+        : "No research notes connected yet."}</p>
+    </li>`;
+  }
+
+  const href = reference.url || (reference.doi ? `https://doi.org/${reference.doi}` : "");
+  const title = href
+    ? `<a href="${escapeHtml(href)}" target="_blank" rel="noopener noreferrer">${escapeHtml(reference.title)}</a>`
+    : escapeHtml(reference.title);
+  const meta = [reference.authors, reference.year, reference.journal_or_publisher]
+    .filter(Boolean)
+    .map(escapeHtml)
+    .join(" · ");
+  const noteLinks = linkedNotes.map((note) => `<a href="${researchNoteRoute(note)}">${escapeHtml(note.concept)}</a>`).join("; ");
+  return `<li>
+    <h3>${title}</h3>
+    <p class="source-meta">${meta}</p>
+    <p>${noteLinks ? `Supports ${noteLinks}.` : "No research notes connected yet."}</p>
+  </li>`;
+}
+
 function evidenceStat(label, value, href = "") {
   const content = `<span>${escapeHtml(label)}</span><strong>${escapeHtml(String(value))}</strong>`;
   return href ? `<a class="evidence-stat" href="${href}">${content}</a>` : `<div class="evidence-stat">${content}</div>`;
@@ -1372,13 +1780,59 @@ function relatedArticleLinks(value = "") {
   }).join("");
 }
 
+function articleFromReference(value = "") {
+  return canonical.find((entry) => String(entry.article_number) === value)
+    || allArticles.find((entry) => entry.title === value)
+    || allArticles.find((entry) => entry.slug === slugify(value));
+}
+
+function markdownSection(markdown, headingTitle) {
+  const lines = stripFrontmatter(markdown).split("\n");
+  const headingPattern = new RegExp(`^(#{1,6})\\s+${escapeRegExp(headingTitle)}\\s*$`, "i");
+  const start = lines.findIndex((line) => headingPattern.test(line.trim()));
+  if (start === -1) return "";
+
+  const level = lines[start].trim().match(/^(#{1,6})/)?.[1].length ?? 2;
+  let end = lines.length;
+  for (let index = start + 1; index < lines.length; index += 1) {
+    const heading = lines[index].trim().match(/^(#{1,6})\s+/);
+    const headingText = lines[index].trim().replace(/^#{1,6}\s+/, "").trim();
+    if (
+      headingTitle.toLowerCase() === "research notes"
+      && /^(open questions|related reading|key references)$/i.test(headingText)
+    ) {
+      end = index;
+      break;
+    }
+    if (heading && heading[1].length <= level) {
+      end = index;
+      break;
+    }
+  }
+  return lines.slice(start + 1, end).join("\n").trim();
+}
+
+function articleResearchNotesSection(row) {
+  const preferredSlug = articleResearchNoteSources.get(row.note_id);
+  const primaryArticle = (preferredSlug && allArticles.find((article) => article.slug === preferredSlug))
+    || splitValues(row.related_articles).map(articleFromReference).find(Boolean);
+  if (!primaryArticle) return "";
+
+  const notesMarkdown = markdownSection(primaryArticle.markdown, "Research Notes");
+  if (!notesMarkdown) return "";
+  const noteWordCount = notesMarkdown.split(/\s+/).filter(Boolean).length;
+  if (noteWordCount < 30) return "";
+
+  return `<h2 id="article-research-notes">Article Research Notes</h2>
+        <p class="source-meta">Extracted from <a href="${primaryArticle.route}">${escapeHtml(primaryArticle.title)}</a>.</p>
+        ${markdownToHtml(notesMarkdown)}`;
+}
+
 function noteReferencesArticle(note, article) {
   return splitValues(note.related_articles).some((item) => {
     if (String(article.article_number) && item === String(article.article_number)) return true;
     if (item === article.title || slugify(item) === article.slug) return true;
-    const linkedArticle = canonical.find((entry) => String(entry.article_number) === item)
-      || allArticles.find((entry) => entry.title === item)
-      || allArticles.find((entry) => entry.slug === slugify(item));
+    const linkedArticle = articleFromReference(item);
     return linkedArticle?.slug === article.slug;
   });
 }
@@ -1440,10 +1894,12 @@ function researchObjectsForArticle(article) {
 }
 
 function researchObjectCard(object) {
-  return `<article class="research-object" id="${escapeHtml(object.id)}">
+  const href = researchNoteRoute(object.note);
+  return `<article class="research-object" id="${escapeHtml(object.id)}" data-content-card tabindex="0">
     <div class="card-top"><span>Research object</span><span class="status">${escapeHtml(object.note.status)}</span></div>
-    <h3><a href="${researchNoteRoute(object.note)}">${escapeHtml(object.note.concept)}</a></h3>
+    <h3><a href="${href}">${escapeHtml(object.note.concept)}</a></h3>
     <p>${escapeHtml(object.note.core_question)}</p>
+    ${contentActions({ href, readLabel: "Read note", bookmarkLabel: "Bookmark", savedLabel: "Bookmarked" })}
     <div class="object-links">
       <div><strong>Sensory map</strong><div class="tag-row">${object.sensoryNodes.map(sensoryNodeLink).join("") || `<a class="tag" href="/research/sensory-map/">Open map</a>`}</div></div>
       <div><strong>Researchers</strong><p>${object.researchers.slice(0, 6).map((researcher) => `<a href="${researcherRoute(researcher)}">${escapeHtml(researcher.name)}</a>`).join("; ") || "No connected profile yet."}</p></div>
@@ -1459,6 +1915,35 @@ function articleResearchObjectSection(objects) {
     <p>Reusable notes behind this essay. Each object links back to the research note, sensory map and connected authors.</p>
     <div class="research-object-grid">${objects.map(researchObjectCard).join("")}</div>
   </section>`;
+}
+
+function sourceInlineLink(sourceId) {
+  const reference = referencesById.get(sourceId);
+  if (!reference) return `<code>${escapeHtml(sourceLabel(sourceId))}</code>`;
+
+  const href = reference.url || (reference.doi ? `https://doi.org/${reference.doi}` : "");
+  const title = escapeHtml(reference.title);
+  return href
+    ? `<a href="${escapeHtml(href)}" target="_blank" rel="noopener noreferrer">${title}</a>`
+    : title;
+}
+
+function researcherResearchObjectCard(note, researcherSourceIds) {
+  const noteSourceIds = splitValues(note.source_ids);
+  const href = researchNoteRoute(note);
+  const matchingSourceIds = noteSourceIds.filter((sourceId) => researcherSourceIds.includes(sourceId));
+  const relatedEssays = splitValues(note.related_articles).map(relatedArticleLinks).filter(Boolean).join("; ");
+  return `<article class="research-object" id="${escapeHtml(`research-object-${note.note_id}`)}" data-content-card tabindex="0">
+    <div class="card-top"><span>Research object</span><span class="status">${escapeHtml(note.status)}</span></div>
+    <h3><a href="${href}">${escapeHtml(note.concept)}</a></h3>
+    <p>${escapeHtml(note.core_question)}</p>
+    ${contentActions({ href, readLabel: "Read note", bookmarkLabel: "Bookmark", savedLabel: "Bookmarked" })}
+    <div class="object-links">
+      <div><strong>Researcher sources</strong><p>${matchingSourceIds.map(sourceInlineLink).join("; ") || "No direct source connected yet."}</p></div>
+      <div><strong>Research areas</strong><div class="tag-row">${splitValues(note.related_tags).slice(0, 4).map((tag) => `<a class="tag" href="${tagLink(tag)}">${escapeHtml(tag)}</a>`).join("")}</div></div>
+      <div><strong>Related essays</strong><p>${relatedEssays || "No related essays connected yet."}</p></div>
+    </div>
+  </article>`;
 }
 
 function normalisedWords(value = "") {
@@ -1529,10 +2014,12 @@ function timelineUsedInTags(row) {
 }
 
 function researchNoteCard(row) {
-  return `<article class="article-card">
+  const href = researchNoteRoute(row);
+  return `<article class="article-card" data-content-card tabindex="0">
     <div class="card-top"><span>Research note</span><span class="status">${escapeHtml(row.status)}</span></div>
-    <h3><a href="${researchNoteRoute(row)}">${escapeHtml(row.concept)}</a></h3>
+    <h3><a href="${href}">${escapeHtml(row.concept)}</a></h3>
     <p>${escapeHtml(row.core_question)}</p>
+    ${contentActions({ href, readLabel: "Read note", bookmarkLabel: "Bookmark", savedLabel: "Bookmarked" })}
     <div class="tag-row">${splitValues(row.related_tags).slice(0, 3).map((tag) => `<a class="tag" href="${tagLink(tag)}">${escapeHtml(tag)}</a>`).join("")}</div>
   </article>`;
 }
@@ -1543,7 +2030,7 @@ function researchNotesPage() {
   const panel = evidencePanel({
     title: "Evidence Coverage",
     eyebrow: "Research base",
-    note: "A live summary of the concept-note system, not a decorative diagram.",
+    note: "A live summary of source-backed research notes, not a decorative diagram.",
     stats: [
       evidenceStat("linked notes", linkedNotes),
       evidenceStat("source links", uniqueSourceIds.size, "/research/timeline/"),
@@ -1560,20 +2047,32 @@ function researchNotesPage() {
         <div>
           <div class="eyebrow">Research base</div>
           <h1>Research Notes</h1>
-          <p class="lead">Concept-level notes that connect sources, researchers, essay drafts and themes.</p>
-          <p class="thesis">These pages are the evidence map behind the essays. They are seeded, not final citation cards.</p>
+          <p class="lead">Source-backed notes that connect discoveries, theories, researchers, essay drafts and research areas.</p>
+          <p class="thesis">Each note starts from a confirmed discovery or theory, then shows the supporting sources behind the essays.</p>
         </div>
         ${panel}
       </div>
     </section>
     <section class="band">
       <div class="band-inner">
-        <div class="section-head"><h2>Concept Notes</h2><p>${researchNoteRows.length} research notes currently support the journal.</p></div>
+        <div class="section-head"><h2>Source-Backed Notes</h2><p>${researchNoteRows.length} research notes currently support the journal.</p></div>
         <div class="article-grid">${researchNoteRows.map(researchNoteCard).join("")}</div>
       </div>
     </section>
   </main>`;
-  return layout({ title: "Research Notes", description: "Concept-level research notes for Sansara.", body, current: "Research base" });
+  return layout({ title: "Research Notes", description: "Source-backed discoveries and theories for Sansara.", body, current: "Research base", brandSub: "Research Notes" });
+}
+
+function discoveryStorySection(row) {
+  const story = discoveryStories[row.note_id];
+  if (!story) return "";
+
+  return `<section class="discovery-story" aria-label="${escapeHtml(row.concept)} discovery story">
+          <h2 id="discovery">Discovery</h2>
+          <p class="source-meta">University research story · ${escapeHtml(story.year)}</p>
+          <p>${escapeHtml(story.scene)}</p>
+          <p><strong>Result:</strong> ${escapeHtml(story.result)}</p>
+        </section>`;
 }
 
 function researchNotePage(row) {
@@ -1585,7 +2084,7 @@ function researchNotePage(row) {
     return sourceIds.some((sourceId) => researcherSourceIds.includes(sourceId));
   });
   const panel = evidencePanel({
-    title: "Concept Links",
+    title: "Evidence Links",
     eyebrow: "Evidence map",
     note: row.next_action,
     stats: [
@@ -1602,6 +2101,11 @@ function researchNotePage(row) {
           <div class="eyebrow">Research note</div>
           <h1>${escapeHtml(row.concept)}</h1>
           <p class="lead">${escapeHtml(row.core_question)}</p>
+          <div class="article-hero-meta">
+            <span>${escapeHtml(row.status)}</span>
+            <button class="mini-button" type="button" data-bookmark="${escapeHtml(researchNoteRoute(row))}" data-bookmark-label="Bookmark note" data-bookmark-saved-label="Bookmarked">Bookmark note</button>
+            <button class="mini-button" type="button" data-read-flag="${escapeHtml(researchNoteRoute(row))}" data-read-label="Read already" data-read-saved-label="Read">Read already</button>
+          </div>
           <div class="tag-row" style="margin-top:24px">${splitValues(row.related_tags).map((tag) => `<a class="tag" href="${tagLink(tag)}">${escapeHtml(tag)}</a>`).join("")}</div>
         </div>
         ${panel}
@@ -1609,8 +2113,10 @@ function researchNotePage(row) {
     </section>
     <div class="article-layout">
       <article class="article-body">
+        ${discoveryStorySection(row)}
         <h2 id="sources">Sources</h2>
         <ul class="source-list">${sourceIds.map(sourceCitation).join("")}</ul>
+        ${articleResearchNotesSection(row)}
         <h2 id="researchers">Researchers</h2>
         <ul>${researchers.map((researcher) => `<li><a href="${researcherRoute(researcher)}">${escapeHtml(researcher.name)}</a> - ${escapeHtml(researcher.known_for)}</li>`).join("") || "<li>No researcher rows connected yet.</li>"}</ul>
         <h2 id="related-essays">Related Essays</h2>
@@ -1620,11 +2126,11 @@ function researchNotePage(row) {
       </article>
       <aside class="side-rail" aria-label="Research note context">
         <div class="rail-block"><h2>Status</h2><p>${escapeHtml(row.status)}</p></div>
-        <div class="rail-block"><h2>Themes</h2><div class="tag-row">${splitValues(row.related_tags).map((tag) => `<a class="tag" href="${tagLink(tag)}">${escapeHtml(tag)}</a>`).join("")}</div></div>
+        <div class="rail-block"><h2>Research Areas</h2><div class="tag-row">${splitValues(row.related_tags).map((tag) => `<a class="tag" href="${tagLink(tag)}">${escapeHtml(tag)}</a>`).join("")}</div></div>
       </aside>
     </div>
   </main>`;
-  return layout({ title: row.concept, description: row.core_question, body, current: "Research note" });
+  return layout({ title: row.concept, description: row.core_question, body, current: "Research note", brandSub: "Research Notes" });
 }
 
 function researcherCard(row) {
@@ -1644,7 +2150,7 @@ function researchersPage() {
     stats: [
       evidenceStat("profiles", researcherRows.length),
       evidenceStat("with sources", connectedResearchers),
-      evidenceStat("concept notes", researchNoteRows.length, "/research/notes/"),
+      evidenceStat("research notes", researchNoteRows.length, "/research/notes/"),
     ],
     links: [
       `<a href="/research/notes/">Open notes</a>`,
@@ -1658,7 +2164,7 @@ function researchersPage() {
           <div class="eyebrow">Research base</div>
           <h1>Researchers</h1>
           <p class="lead">Recurring scientists, theorists and research groups behind the journal's essays.</p>
-          <p class="thesis">Profiles stay concise and point back to concept notes, themes and source candidates.</p>
+          <p class="thesis">Profiles stay concise and point back to research notes, research areas and source candidates.</p>
         </div>
         ${panel}
       </div>
@@ -1686,9 +2192,9 @@ function researcherPage(row) {
     eyebrow: "Profile evidence",
     note: row.notes,
     stats: [
-      evidenceStat("concept notes", notes.length, "#research-notes"),
+      evidenceStat("objects", notes.length, "#research-objects"),
       evidenceStat("verified sources", verifiedSources.length, "#sources"),
-      evidenceStat("themes", themes.length),
+      evidenceStat("areas", themes.length),
     ],
     links: themes.slice(0, 4).map((tag) => `<a href="${tagLink(tag)}">${escapeHtml(tag)}</a>`),
   });
@@ -1706,8 +2212,11 @@ function researcherPage(row) {
     </section>
     <div class="article-layout">
       <article class="article-body">
-        <h2 id="research-notes">Research Notes</h2>
-        <ul>${notes.map((note) => `<li><a href="${researchNoteRoute(note)}">${escapeHtml(note.concept)}</a> - ${escapeHtml(note.core_question)}</li>`).join("") || "<li>No concept notes connected yet.</li>"}</ul>
+        <section class="article-research-objects" aria-label="Research objects related to ${escapeHtml(row.name)}">
+          <h2 id="research-objects">Research Objects</h2>
+          <p>Concept objects connected to this researcher through verified sources.</p>
+          <div class="research-object-grid">${notes.map((note) => researcherResearchObjectCard(note, sourceIds)).join("") || "<p>No research objects connected yet.</p>"}</div>
+        </section>
         <h2 id="sources">Sources</h2>
         <ul class="source-list">${sourceIds.map(sourceCitation).join("")}</ul>
         <h2>Editorial Note</h2>
@@ -1725,19 +2234,33 @@ function researcherPage(row) {
 function articlePage(article) {
   const previous = article.previousRoute ? articlesByRoute.get(article.previousRoute) : null;
   const next = article.nextRoute ? articlesByRoute.get(article.nextRoute) : null;
-  const related = article.related.slice(0, 6).map((item) => `<li><a href="${item.route}">${escapeHtml(item.title)}</a></li>`).join("");
+  const relatedArticles = article.related.length ? article.related : allArticles
+    .filter((item) => item.route !== article.route)
+    .map((item) => ({
+      article: item,
+      score: item.tags.filter((tag) => article.tags.includes(tag)).length,
+    }))
+    .filter((item) => item.score > 0)
+    .sort((a, b) => b.score - a.score || Number(a.article.article_number || 99) - Number(b.article.article_number || 99))
+    .map((item) => item.article);
+  const related = relatedArticles.slice(0, 6).map((item) => `<li><a href="${item.route}">${escapeHtml(item.title)}</a></li>`).join("");
   const sensoryNodes = sensoryNodesForArticle(article);
   const researchObjects = researchObjectsForArticle(article);
   const researchers = [...new Map(researchObjects.flatMap((object) => object.researchers).map((researcher) => [researcher.researcher_id, researcher])).values()];
   const articleBody = markdownToHtml(articleBodyMarkdown(article.markdown, article.title));
-  const body = `<div data-progress style="position:fixed;top:0;left:0;height:3px;background:var(--teal);z-index:50;width:0"></div>
-    <main>
+  const body = `<main>
       <section class="hero article-hero">
         <div class="hero-inner">
           <div>
             <div class="eyebrow">${article.article_number ? `Essay ${article.article_number} of ${canonical.length}` : "Companion Essay"}</div>
             <h1>${escapeHtml(article.title)}</h1>
             <p class="lead">${escapeHtml(article.thesis)}</p>
+            <div class="article-hero-meta">
+              <span>${article.minutes} min read</span>
+              <span>${escapeHtml(article.status.replaceAll("_", " "))}</span>
+              <button class="mini-button" type="button" data-bookmark="${escapeHtml(article.route)}">Save article</button>
+              <button class="mini-button" type="button" data-read-flag="${escapeHtml(article.route)}" data-read-label="Read already" data-read-saved-label="Read">Read already</button>
+            </div>
             <div class="tag-row" style="margin-top:24px">${article.tags.map((tag) => `<a class="tag" href="${tagLink(tag)}">${escapeHtml(tag)}</a>`).join("")}</div>
           </div>
           ${artifact(artifactMap[article.slug], article.title)}
@@ -1754,10 +2277,10 @@ function articlePage(article) {
         <aside class="side-rail" aria-label="Essay context">
           <div class="rail-block">
             <h2>Reading</h2>
-            <p>${article.minutes} min · ${escapeHtml(article.status.replaceAll("_", " "))}</p>
+            <p><strong>${article.minutes} min</strong> · ${escapeHtml(article.status.replaceAll("_", " "))}</p>
           </div>
           <div class="rail-block">
-            <h2>Themes</h2>
+            <h2>Research Areas</h2>
             <div class="tag-row">${article.tags.map((tag) => `<a class="tag" href="${tagLink(tag)}">${escapeHtml(tag)}</a>`).join("")}</div>
           </div>
           <div class="rail-block">
@@ -1779,19 +2302,25 @@ function articlePage(article) {
         </aside>
       </div>
     </main>`;
-  return layout({ title: article.title, description: article.thesis, body, current: article.article_number ? "Issue essay" : "Companion essay" });
+  return layout({
+    title: article.title,
+    description: article.thesis,
+    body,
+    current: article.article_number ? "Issue essay" : "Companion essay",
+    brandSub: article.article_number ? "Research Journal Issue 1" : "Companion Essays",
+  });
 }
 
 function themesPage() {
   const themeCards = [...tagSlugs.keys()].map((tag) => {
-    const tagged = allArticles.filter((article) => article.tags.includes(tag));
+    const tagged = themeArticlesFor(tag);
     const nodes = sensoryNodesForTag(tag);
-    const topEssays = tagged.slice(0, 3).map((article) => `<a href="${article.route}"><span>${escapeHtml(essayLabel(article))}</span> <strong>${escapeHtml(article.title)}</strong></a>`).join("");
+    const themeEssays = tagged.map((article) => `<a href="${article.route}"><span>${escapeHtml(essayLabel(article))}</span> <strong>${escapeHtml(article.title)}</strong></a>`).join("");
     return `<article class="connection-card">
       <div class="card-top"><span>Theme</span><span class="status">${tagged.length} essays</span></div>
       <h3><a href="${tagLink(tag)}">${escapeHtml(tag)}</a></h3>
       <p>${escapeHtml(tagDescriptions[tag] || "A pathway through the Sansara research journal.")}</p>
-      <div class="connection-links">${topEssays}</div>
+      <div class="connection-links">${themeEssays}</div>
       <div class="tag-row">${nodes.slice(0, 4).map(sensoryNodeLink).join("")}</div>
     </article>`;
   }).join("");
@@ -1825,17 +2354,8 @@ function themesPage() {
 }
 
 function tagPage(tag) {
-  const tagged = allArticles.filter((article) => article.tags.includes(tag));
+  const tagged = themeArticlesFor(tag);
   const nodes = sensoryNodesForTag(tag);
-  const issueEssays = tagged.filter((article) => article.article_number);
-  const companionEssays = tagged.filter((article) => !article.article_number);
-  const intersectingIssueEssays = issueEssays.filter((article) => primaryTheme(article) !== tag);
-  const coreCompanionEssays = companionEssays.filter((article) => primaryTheme(article) === tag);
-  const startHere = startHereArticles(tagged, tag);
-  const startHereSlugs = new Set(startHere.map((article) => article.slug));
-  const intersectionCandidates = intersectingIssueEssays.filter((article) => !startHereSlugs.has(article.slug));
-  const displayedIntersections = intersectionCandidates.slice(0, 6);
-  const hiddenIntersectionCount = Math.max(0, intersectionCandidates.length - displayedIntersections.length);
   const profile = themeProfileFor(tag);
   const body = `<main>
     <section class="hero">
@@ -1857,11 +2377,12 @@ function tagPage(tag) {
     </section>
     <section class="band">
       <div class="band-inner">
-        <div class="section-head"><h2>Start Here</h2><p>${escapeHtml(profile.startNote || "A short path into the theme before opening the full archive.")}</p></div>
-        <div class="reading-path">${startHere.map((article, index) => `<article class="reading-step">
+        <div class="section-head"><h2>Essays In This Theme</h2><p>${escapeHtml(profile.startNote || "The complete curated essay set for this theme.")}</p></div>
+        <div class="reading-path">${tagged.map((article, index) => `<article class="reading-step">
           <span>${String(index + 1).padStart(2, "0")}</span>
           <h3><a href="${article.route}">${escapeHtml(article.title)}</a></h3>
           <p>${escapeHtml(article.thesis)}</p>
+          <small>${escapeHtml(essayLabel(article))}${primaryTheme(article) !== tag ? ` · Primary theme: ${escapeHtml(primaryTheme(article))}` : ""}</small>
         </article>`).join("")}</div>
       </div>
     </section>
@@ -1871,27 +2392,6 @@ function tagPage(tag) {
         ${sensoryFingerprint(nodes)}
       </div>
     </section>
-    ${displayedIntersections.length ? `<section class="band">
-      <div class="band-inner">
-        <div class="section-head"><h2>Key Intersections</h2><p>These essays touch the theme, but belong primarily somewhere else. ${hiddenIntersectionCount ? `${hiddenIntersectionCount} lighter overlaps stay discoverable through essay sidebars and the sensory map.` : "This keeps overlap useful without repeating the whole journal."}</p></div>
-        <div class="intersection-list">${displayedIntersections.map((article) => `<a href="${article.route}">
-          <span>${escapeHtml(essayLabel(article))}</span>
-          <strong>${escapeHtml(article.title)}</strong>
-          <small>Primary theme: ${escapeHtml(primaryTheme(article))}</small>
-        </a>`).join("")}</div>
-      </div>
-    </section>` : ""}
-    ${coreCompanionEssays.length ? `<section class="band">
-      <div class="band-inner">
-        <div class="section-head"><h2>Companion Essays</h2><p>These companion pieces use this theme as their primary home.</p></div>
-        <div class="connection-grid">${coreCompanionEssays.map((article) => `<article class="connection-card">
-          <div class="card-top"><span>${escapeHtml(essayLabel(article))}</span><span class="status">${article.minutes} min</span></div>
-          <h3><a href="${article.route}">${escapeHtml(article.title)}</a></h3>
-          <p>${escapeHtml(article.thesis)}</p>
-          <div class="connection-links">${article.related.slice(0, 3).map(compactArticleLink).join("")}</div>
-        </article>`).join("")}</div>
-      </div>
-    </section>` : ""}
   </main>`;
   return layout({ title: tag, description: tagDescriptions[tag], body, current: "Theme page" });
 }
@@ -1921,10 +2421,11 @@ const perspectiveSections = [
 
 function journalPage() {
   const issueGroups = articleActs.map((act) => {
-    const issues = canonical.filter((article) => article.act === act.source).map((article) => `<article class="issue-card">
+    const issues = canonical.filter((article) => article.act === act.source).map((article) => `<article class="issue-card" data-issue-card data-content-card data-tags="${escapeHtml(article.tags.join("|"))}" tabindex="0">
       <div class="card-top"><span>${escapeHtml(essayLabel(article))}</span><span>${article.minutes} min</span></div>
       <h3><a href="${article.route}">${escapeHtml(article.title)}</a></h3>
       <p>${escapeHtml(article.thesis)}</p>
+      ${contentActions({ href: article.route, readLabel: "Read", bookmarkLabel: "Bookmark", savedLabel: "Bookmarked" })}
     </article>`).join("");
     return `<section class="issue-act" id="${act.id}">
       <a class="act-link" href="${actLink(act)}">
@@ -1934,12 +2435,8 @@ function journalPage() {
       <div class="issue-list">${issues}</div>
     </section>`;
   }).join("");
-  const sections = perspectiveSections.map((section) => `<article class="series-card">
-    <div class="series-label">${section.label}</div>
-    <h3>${escapeHtml(section.title)}</h3>
-    <p>${escapeHtml(section.description)}</p>
-  </article>`).join("");
-  const body = `<main>
+  const body = `${issueJourneyDock()}
+  <main>
     <section class="hero">
       <div class="hero-inner">
         <div>
@@ -1949,12 +2446,6 @@ function journalPage() {
           <p class="thesis">A manifesto on Environmental State Design: how sensory, spatial, temporal, social and technological conditions shape attention, movement, regulation, recovery, synchrony and flow.</p>
         </div>
         ${artifact("state-design", "Issue arc", "Research sequence / state arc")}
-      </div>
-    </section>
-    <section class="band">
-      <div class="band-inner">
-        <div class="section-head"><h2>Manifesto Structure</h2><p>Four acts connect the essays into one argument, from environment to prediction to collective rhythm to state design.</p></div>
-        <div class="series-outline">${sections}</div>
       </div>
     </section>
     <section class="band">
@@ -1991,32 +2482,32 @@ const themeProfiles = {
   "Rhythm & Entrainment": {
     question: "How does timing organise movement, attention and group state?",
     why: "Rhythm is treated as infrastructure: a temporal scaffold that helps bodies coordinate action, anticipate change and enter shared attention.",
-    startSlugs: ["rhythm-infrastructure", "predictive-brain-yoga-studio", "collective-flow", "elite-athletes-yoga-teachers"],
-    startNote: "Start with rhythm as infrastructure, then follow it into prediction, group synchrony and teaching practice.",
+    startSlugs: ["rhythm-infrastructure", "collective-flow", "elite-athletes-yoga-teachers", "when-teaching-replaces-practice"],
+    startNote: "Start with rhythm as infrastructure, then follow it into group synchrony, teaching attention and teacher workload.",
   },
   "Flow State": {
     question: "What conditions make immersion more likely without trying to force it?",
     why: "Flow is framed as an emergent state of skill, attention, challenge, reduced friction and feedback, not a mood that can be switched on directly.",
-    startSlugs: ["where-do-ideas-come-from", "collective-flow", "state-engineering", "measure-flow"],
-    startNote: "Start with creative flow, then move into collective flow, state design and the measurement problem.",
+    startSlugs: ["where-do-ideas-come-from", "collective-flow", "state-engineering", "measure-flow", "state-design-promise-problem-middle-path"],
+    startNote: "Start with creative flow, then move into collective flow, state design, measurement and the ethics of shared states.",
   },
   "Breath & Nervous System": {
     question: "How does the body know it is safe, ready, recovering or under demand?",
     why: "Breath is not treated as a standalone technique. It is part of a wider regulation system involving interoception, prediction, autonomic state, recovery and learning.",
-    startSlugs: ["beyond-homeostasis", "predictive-brain-yoga-studio", "sensory-coherence", "measure-flow"],
+    startSlugs: ["light-performance-variable", "predictive-brain-yoga-studio", "beyond-homeostasis", "sensory-coherence", "measure-flow"],
     startNote: "Start with regulation, then follow breath into prediction, sensory coherence and the problem of measuring state without interrupting it.",
   },
   "Light & Perception": {
     question: "How do light, visual atmosphere and space change attention and recovery?",
     why: "Light and perception are treated as biological design variables: they shape circadian timing, arousal, visual comfort, mood and the felt intelligence of a room.",
-    startSlugs: ["environmental-architecture", "light-performance-variable", "sensory-coherence", "environmental-performance"],
+    startSlugs: ["environmental-architecture", "light-performance-variable", "sensory-coherence", "environmental-performance", "can-technology-become-invisible"],
     startNote: "Start with the room, then move into light, sensory coherence and the environmental-performance thesis.",
   },
   "Music & Emotion": {
     question: "How does sound change the emotional and social texture of practice?",
     why: "Music is treated as more than motivation. It shapes timing, atmosphere, awe, memory, shared attention and the arc of a class.",
-    startSlugs: ["rhythm-infrastructure", "where-do-ideas-come-from", "collective-flow", "environmental-performance"],
-    startNote: "Start with rhythm, then follow sound into creative flow, group state and environmental design.",
+    startSlugs: ["rhythm-infrastructure", "where-do-ideas-come-from", "the-neuroscience-of-awe", "why-beauty-matters"],
+    startNote: "Start with rhythm, then follow sound into creative flow, awe and beauty.",
   },
 };
 
@@ -2111,7 +2602,8 @@ writePage("/instruction-manual/", placeholderPage({
   lead: "The practical operating language for teachers, studios and collaborators using the Sansara method.",
   thesis: "This belongs beside training and product guidance. It can cite research, but it should be structured as a manual rather than a journal issue.",
 }));
-writePage("/research/", researchHomePage());
+writePage("/research/", journalPage());
+writePage("/research/home/", researchHomePage());
 writePage("/research/designing-human-states/", aliasPage({ title: "Designing Human States", target: "/research/issue-1/" }));
 writePage("/research/issue-1/", journalPage());
 writePage("/journal/", aliasPage({ title: "Designing Human States", target: "/research/issue-1/" }));
